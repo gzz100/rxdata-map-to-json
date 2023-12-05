@@ -6,10 +6,13 @@ function getKey(instanceVars, name) {
     var result = undefined
     instanceVars.forEach(element => {
         if (element != null) {
-            if (Symbol.keyFor(element[0]) == name) {
+			var kname=Symbol.keyFor(element[0]);
+            if (kname == name) {
                 result = element[1]
                 return result
-            }
+            }else{
+					//console.log(kname)
+			}
         }
     })
     return result
@@ -23,15 +26,25 @@ async function doProcess(directory, output)
     const dir = await fs.promises.opendir(directory)
     for await (const dirent of dir) {
         var fileread = await fs.readFileSync(directory + '/' + dirent.name)
+			try{
+			
+			console.log(dirent.name)
         var rxdata = await marshal.load(fileread.buffer)
-        if (Symbol.keyFor(rxdata.className) == "RPG::Map") {
+        if (rxdata.className !== undefined && Symbol.keyFor(rxdata.className) == "RPG::Map") {
             mapFiles.push({
                 name: dirent.name,
                 data: rxdata
             })
-        } else {
+        } else if(rxdata[1].className !== undefined && Symbol.keyFor(rxdata[1].className) == "RPG::Tileset") {
+            console.warn(`${dirent.name} is Tileset`)
+				
+			console.log(rxdata[1].instanceVariables[0][1])
+        }else {
             console.warn(`${dirent.name} is excluded because it's not RPG::Map data`)
         }
+		}catch(e){
+			console.warn(e)
+		}
     }
 
     if (mapFiles.length == 0) {
